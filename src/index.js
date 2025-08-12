@@ -9,23 +9,8 @@ if (!token) {
   process.exit(1);
 }
 
-// Создаем бота без polling, чтобы сначала сбросить обновления
-const bot = new TelegramBot(token, { polling: false });
-
-async function startBot() {
-  try {
-    // Удаляем webhook, если он установлен
-    await bot.deleteWebhook();
-    // Забираем все обновления, чтобы сбросить очередь
-    await bot.getUpdates();
-    // Запускаем polling
-    bot.startPolling();
-    console.log("Бот успешно запущен и слушает сообщения.");
-  } catch (error) {
-    console.error("Ошибка при запуске бота:", error);
-    process.exit(1);
-  }
-}
+// Создаем бота с настройкой для использования polling
+const bot = new TelegramBot(token, { polling: true });
 
 bot.on('message', (msg) => {
   if (msg.text === '/ping') {
@@ -33,4 +18,4 @@ bot.on('message', (msg) => {
   }
 });
 
-startBot();
+console.log("Бот успешно запущен и слушает сообщения.");

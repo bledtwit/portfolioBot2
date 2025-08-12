@@ -1,18 +1,18 @@
 console.log("Бот стартует");
 
 require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
+const TelegramBot = require('node-telegram-bot-api');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const token = process.env.TELEGRAM_TOKEN;
+if (!token) {
+  console.error("TELEGRAM_TOKEN не найден в .env");
+  process.exit(1);
+}
 
-client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-});
+const bot = new TelegramBot(token, { polling: true });
 
-client.on('messageCreate', message => {
-  if (message.content === '!ping') {
-    message.channel.send('Pong!');
+bot.on('message', (msg) => {
+  if (msg.text === '/ping') {
+    bot.sendMessage(msg.chat.id, 'Pong!');
   }
 });
-
-client.login(process.env.DISCORD_TOKEN);

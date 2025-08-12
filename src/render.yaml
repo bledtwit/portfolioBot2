@@ -1,0 +1,7 @@
+services:
+  - type: worker
+    name: portfolio-bot
+    env: java
+    plan: free
+    buildCommand: mvn clean package
+    startCommand: java -jar target/portfolioBot-1.0-SNAPSHOT.jar

@@ -1,6 +1,7 @@
 console.log("Бот стартует");
 
 require('dotenv').config();
+console.log('TELEGRAM_TOKEN из process.env:', process.env.TELEGRAM_TOKEN);
 const TelegramBot = require('node-telegram-bot-api');
 
 const token = process.env.TELEGRAM_TOKEN;

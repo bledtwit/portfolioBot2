@@ -1,21 +1,40 @@
-console.log("Бот стартует");
-
+// index.js
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 
+// Проверяем токен
 const token = process.env.TELEGRAM_TOKEN;
 if (!token) {
-  console.error("TELEGRAM_TOKEN не найден в .env");
+  console.error("Ошибка: TELEGRAM_TOKEN не найден в .env");
   process.exit(1);
 }
 
-// Создаем бота с настройкой для использования polling
+// Создаём бота с polling (не нужен порт и Webhook)
 const bot = new TelegramBot(token, { polling: true });
 
+console.log("Бот успешно запущен через polling и работает непрерывно.");
+
+// Пример обработчиков сообщений
 bot.on('message', (msg) => {
-  if (msg.text === '/ping') {
-    bot.sendMessage(msg.chat.id, 'Pong!');
+  const chatId = msg.chat.id;
+  const text = msg.text;
+
+  if (!text) return;
+
+  // Команда /ping
+  if (text === '/ping') {
+    bot.sendMessage(chatId, 'Pong!');
   }
+
+  // Пример простого ответа
+  if (text.toLowerCase() === 'привет') {
+    bot.sendMessage(chatId, 'Привет! Я бот.');
+  }
+
+  // Добавляй свои обработчики сюда
 });
 
-console.log("Бот успешно запущен и слушает сообщения.");
+// Обработка ошибок
+bot.on('polling_error', (err) => {
+  console.error('Polling ошибка:', err.code, err.message);
+});

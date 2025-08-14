@@ -1,69 +1,50 @@
 require('dotenv').config();
-const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 
 const token = process.env.TELEGRAM_TOKEN;
 const adminId = process.env.ADMIN_ID;
-const appUrl = process.env.APP_URL || 'https://your-app.onrender.com';
 
-if (!token) {
-  console.error("TELEGRAM_TOKEN не найден в .env");
+if (!token || !adminId) {
+  console.error("TELEGRAM_TOKEN или ADMIN_ID не найден в .env");
   process.exit(1);
 }
 
-if (!adminId) {
-  console.error("ADMIN_ID не найден в .env");
-  process.exit(1);
-}
+const bot = new TelegramBot(token, { polling: true });
 
-const bot = new TelegramBot(token);
-const app = express();
+// Временный объект для хранения, кто сейчас задает вопрос
+const waitingForQuestion = {};
 
-app.use(express.json());
-
-// Webhook для Render
-app.post('/bot', (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
-
-// Регистрация команд для меню Telegram
-bot.setMyCommands([
-  { command: '/help', description: 'Помощь по боту' },
-  { command: '/link', description: 'Ссылка на сайт' },
-  { command: '/me', description: 'Информация о себе' }
-]);
-
-// Обработка сообщений
+// Обработчик команд
 bot.on('message', (msg) => {
+  const chatId = msg.chat.id;
   const text = msg.text;
 
-  // Если сообщение не команда
-  if (!text.startsWith('/')) {
-    bot.sendMessage(msg.chat.id, 'Неверная команда, попробуй ещё раз!');
+  // Если пользователь в режиме написания вопроса
+  if (waitingForQuestion[chatId]) {
+    bot.sendMessage(adminId, `Вопрос от @${msg.from.username || msg.from.first_name}: ${text}`);
+    bot.sendMessage(chatId, "Ваш вопрос отправлен!");
+    delete waitingForQuestion[chatId]; // снимаем режим
     return;
   }
 
-  switch(text) {
+  switch (text) {
     case '/help':
-      bot.sendMessage(msg.chat.id, 'Здесь будет помощь и инструкции по боту.');
+      bot.sendMessage(chatId, "Напишите ваш вопрос:");
+      waitingForQuestion[chatId] = true; // включаем режим вопроса
       break;
+
     case '/link':
-      bot.sendMessage(msg.chat.id, 'Сайт ещё в разработке.');
+      bot.sendMessage(chatId, "Сайт еще в разработке!");
       break;
+
     case '/me':
-      bot.sendMessage(msg.chat.id, 'Информация о тебе: ...');
+      bot.sendMessage(chatId, "Здесь будет информация о вас.");
       break;
+
     default:
-      // Пересылка сообщений админу
-      bot.sendMessage(adminId, `Новое сообщение от @${msg.from.username || msg.from.first_name}: ${text}`);
-      bot.sendMessage(msg.chat.id, 'Команда не распознана. Попробуй ещё раз!');
+      bot.sendMessage(chatId, "Неверно, попробуйте еще раз.");
+      break;
   }
 });
 
-// Запуск сервера
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-  await bot.setWebHook(`${appUrl}/bot`);
-  console.log(`Бот успешно запущен и слушает команды на ${appUrl}/bot`);
-});
+console.log("Бот запущен и слушает сообщения...");

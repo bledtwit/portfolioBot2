@@ -46,7 +46,7 @@ bot.on('message', (msg) => {
       break;
 
     case '/me':
-      bot.sendMessage(chatId, "Здесь будет информация о вас.");
+      bot.sendMessage(chatId, "Я личный бот -- nineteenmg");
       break;
 
     default:

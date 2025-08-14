@@ -1,40 +1,62 @@
-// index.js
 require('dotenv').config();
+const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 
-// Проверяем токен
 const token = process.env.TELEGRAM_TOKEN;
+const adminId = process.env.ADMIN_ID; // сюда твой Telegram ID, куда будут приходить сообщения от пользователей
 if (!token) {
-  console.error("Ошибка: TELEGRAM_TOKEN не найден в .env");
+  console.error("TELEGRAM_TOKEN не найден в .env");
+  process.exit(1);
+}
+if (!adminId) {
+  console.error("ADMIN_ID не найден в .env");
   process.exit(1);
 }
 
-// Создаём бота с polling (не нужен порт и Webhook)
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(token);
+const app = express();
+app.use(express.json());
 
-console.log("Бот успешно запущен через polling и работает непрерывно.");
+// Webhook URL, который Render выдаст, например: https://your-app.onrender.com/bot
+app.post(`/bot`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
 
-// Пример обработчиков сообщений
+// Обработчик команд
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  if (!text) return;
-
-  // Команда /ping
-  if (text === '/ping') {
-    bot.sendMessage(chatId, 'Pong!');
+  if (!text.startsWith('/')) {
+    // если это не команда, отправляем пользователю "неверная команда" и пересылаем сообщение админу
+    bot.sendMessage(chatId, "Неверная команда, попробуйте ещё раз или используйте /help");
+    bot.sendMessage(adminId, `Сообщение от ${msg.from.username || msg.from.first_name} (${chatId}): ${text}`);
+    return;
   }
 
-  // Пример простого ответа
-  if (text.toLowerCase() === 'привет') {
-    bot.sendMessage(chatId, 'Привет! Я бот.');
+  switch (text) {
+    case '/start':
+      bot.sendMessage(chatId, "Привет! Я твой бот. Используй /help чтобы узнать мои команды.");
+      break;
+    case '/help':
+      bot.sendMessage(chatId, "/link — ссылка на мой сайт\n/me — информация обо мне\n/help — показать список команд");
+      break;
+    case '/link':
+      bot.sendMessage(chatId, "Сайт ещё в разработке 😅");
+      break;
+    case '/me':
+      bot.sendMessage(chatId, "Информация обо мне: пока здесь пусто, скоро добавлю 😎");
+      break;
+    default:
+      bot.sendMessage(chatId, "Команда не распознана, попробуйте ещё раз или используйте /help");
+      break;
   }
-
-  // Добавляй свои обработчики сюда
 });
 
-// Обработка ошибок
-bot.on('polling_error', (err) => {
-  console.error('Polling ошибка:', err.code, err.message);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, async () => {
+  const url = process.env.APP_URL || `https://portfoliobot2.onrender.com`; // сюда вставь URL Render
+  await bot.setWebHook(`${url}/bot`);
+  console.log(`Бот успешно запущен и слушает сообщения на ${url}/bot`);
 });

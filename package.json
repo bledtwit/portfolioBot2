@@ -19,6 +19,7 @@
   "homepage": "https://github.com/bledtwit/portfolioBot2#readme",
   "dependencies": {
     "dotenv": "^17.2.1",
+    "express": "^5.1.0",
     "node-telegram-bot-api": "^0.61.0"
   }
 }

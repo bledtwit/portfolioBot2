@@ -1,25 +1,42 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
 
 const token = process.env.TELEGRAM_TOKEN;
 const adminId = process.env.ADMIN_ID;
+const appUrl = process.env.APP_URL; // твой Render URL
 
-if (!token || !adminId) {
-  console.error("TELEGRAM_TOKEN или ADMIN_ID не найден в .env");
+if (!token || !adminId || !appUrl) {
+  console.error("TELEGRAM_TOKEN, ADMIN_ID или APP_URL не найден в .env");
   process.exit(1);
 }
 
-const bot = new TelegramBot(token, { polling: true });
+// === Telegram Bot в режиме webhook ===
+const bot = new TelegramBot(token, { webHook: true });
+bot.setWebHook(`${appUrl}/bot${token}`);
 
-// Временный объект для хранения, кто сейчас задает вопрос
+// === Express сервер для Render ===
+const app = express();
+app.use(express.json());
+
+// Принимаем апдейты от Telegram
+app.post(`/bot${token}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
+// Проверка, что сервер жив
+app.get('/', (req, res) => {
+  res.send('Bot is running!');
+});
+
+// === Логика бота ===
 const waitingForQuestion = {};
-
-// Список запрещённых слов
-const bannedWords = ["бля", "заныл", "хуй", "пиздец"]; // сюда добавляй свои бан-ворды
+const bannedWords = ["бля", "заныл", "хуй", "пиздец"];
 
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
-  const text = msg.text;
+  const text = msg.text || "";
 
   // Проверка на бан-ворды
   if (bannedWords.some(word => text.toLowerCase().includes(word))) {
@@ -31,14 +48,14 @@ bot.on('message', (msg) => {
   if (waitingForQuestion[chatId]) {
     bot.sendMessage(adminId, `Вопрос от @${msg.from.username || msg.from.first_name}: ${text}`);
     bot.sendMessage(chatId, "Ваш вопрос отправлен!");
-    delete waitingForQuestion[chatId]; // снимаем режим
+    delete waitingForQuestion[chatId];
     return;
   }
 
   switch (text) {
     case '/help':
       bot.sendMessage(chatId, "Напишите ваш вопрос:");
-      waitingForQuestion[chatId] = true; // включаем режим вопроса
+      waitingForQuestion[chatId] = true;
       break;
 
     case '/link':
@@ -55,4 +72,8 @@ bot.on('message', (msg) => {
   }
 });
 
-console.log("Бот запущен и слушает сообщения...");
+// Запуск сервера
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});

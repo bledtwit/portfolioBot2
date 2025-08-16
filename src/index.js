@@ -1,7 +1,7 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
-const { Configuration, OpenAIApi } = require('openai');
+const { OpenAI } = require('openai'); // Новый импорт для OpenAI API
 
 const token = process.env.TELEGRAM_TOKEN;
 const adminId = process.env.ADMIN_ID;
@@ -14,8 +14,9 @@ if (!token || !adminId || !appUrl || !openaiKey) {
 }
 
 // Настройка OpenAI
-const configuration = new Configuration({ apiKey: openaiKey });
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI({
+  apiKey: openaiKey,
+});
 
 // Telegram Bot в режиме webhook
 const bot = new TelegramBot(token, { webHook: true });
@@ -56,11 +57,11 @@ bot.on('message', async (msg) => {   // 🔥 теперь async
   // 🔥 Если пользователь в режиме чата с ИИ
   if (waitingForChat[chatId]) {
     try {
-      const response = await openai.createChatCompletion({
+      const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: text }],
       });
-      const answer = response.data.choices[0].message.content;
+      const answer = response.choices[0].message.content;
       bot.sendMessage(chatId, answer);
     } catch (error) {
       bot.sendMessage(chatId, "Произошла ошибка при общении с ИИ.");

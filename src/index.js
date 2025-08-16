@@ -5,6 +5,35 @@ const express = require('express');
 const token = process.env.TELEGRAM_TOKEN;
 const adminId = process.env.ADMIN_ID;
 const appUrl = process.env.APP_URL; // твой Render URL
+const { Configuration, OpenAIApi } = require('openai');
+const openaiKey = process.env.OPENAI_API_KEY;
+
+const configuration = new Configuration({
+  apiKey: openaiKey,
+});
+const openai = new OpenAIApi(configuration);
+
+if (waitingForChat[chatId]) {
+  try {
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: text }],
+    });
+    const answer = response.data.choices[0].message.content;
+    bot.sendMessage(chatId, answer);
+  } catch (error) {
+    bot.sendMessage(chatId, "Произошла ошибка при общении с ИИ.");
+    console.error(error);
+  }
+  return;
+}
+
+case '/chat':
+  bot.sendMessage(chatId, "Вы вошли в режим чата с ИИ. Для выхода отправьте /exit.");
+  waitingForChat[chatId] = true;
+  break;
+
+
 
 if (!token || !adminId || !appUrl) {
   console.error("TELEGRAM_TOKEN, ADMIN_ID или APP_URL не найден в .env");

@@ -54,6 +54,14 @@ bot.on('message', async (msg) => {   // 🔥 теперь async
     return;
   }
 
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Использование в коде
+  await delay(1000); // Задержка в 1 секунду перед следующим запросом
+
+
   // 🔥 Если пользователь в режиме чата с ИИ
   if (waitingForChat[chatId]) {
     try {
